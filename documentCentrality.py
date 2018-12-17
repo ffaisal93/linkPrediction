@@ -9,10 +9,10 @@ def document_centrality(td, *args):
     if n_it < 2:
         n_it = 20
     td = np.array(td)
-    N, T = np.shape(td)
-    if N > 1 and T > 1:
-        l = np.zeros((N, n_it + 1))
-        k = np.zeros((T, n_it + 1))
+    n, t = np.shape(td)
+    if n > 1 and t > 1:
+        l = np.zeros((n, n_it + 1))
+        k = np.zeros((t, n_it + 1))
         k0 = td.sum(axis=0)
         l0 = td.sum(axis=1)
         k[:, 0] = k0
@@ -28,7 +28,7 @@ def document_centrality(td, *args):
         x2 = k[:, 20]
         x2[x2 == 0] = np.nan
         x2 = (x2 - np.nanmean(x2)) / np.nanstd(x2,ddof=1)
-        Cd = x1 + x2
+        cd = x1 + x2
         x1 = l[:, 0]
         x1[x1 == 0] = np.nan
         x1 = np.log(x1)
@@ -36,12 +36,12 @@ def document_centrality(td, *args):
         x2 = l[:, 20]
         x2[x2 == 0] = np.nan
         x2 = (x2 - np.nanmean(x2)) / np.nanstd(x2,ddof=1)
-        Ct = x1 + x2
+        ct = x1 + x2
     else:
         print('Size of the input matrix is too small to do something useful.')
-        Ct = []
-        Cd = []
-    return Cd, Ct
+        ct = []
+        cd = []
+    return cd, ct
 
 
 # if __name__ == '__main__':
