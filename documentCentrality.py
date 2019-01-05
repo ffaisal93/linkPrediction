@@ -24,18 +24,18 @@ def document_centrality(td, *args):
         x1 = k[:, 0]
         x1[x1 == 0] = np.nan
         x1 = np.log(x1)
-        x1 = (x1 - np.nanmean(x1)) / np.nanstd(x1,ddof=1)
+        x1 = (x1 - np.nanmean(x1)) / np.nanstd(x1, ddof=1)
         x2 = k[:, 20]
         x2[x2 == 0] = np.nan
-        x2 = (x2 - np.nanmean(x2)) / np.nanstd(x2,ddof=1)
+        x2 = (x2 - np.nanmean(x2)) / np.nanstd(x2, ddof=1)
         cd = x1 + x2
         x1 = l[:, 0]
         x1[x1 == 0] = np.nan
         x1 = np.log(x1)
-        x1 = (x1 - np.nanmean(x1)) / np.nanstd(x1,ddof=1)
+        x1 = (x1 - np.nanmean(x1)) / np.nanstd(x1, ddof=1)
         x2 = l[:, 20]
         x2[x2 == 0] = np.nan
-        x2 = (x2 - np.nanmean(x2)) / np.nanstd(x2,ddof=1)
+        x2 = (x2 - np.nanmean(x2)) / np.nanstd(x2, ddof=1)
         ct = x1 + x2
     else:
         print('Size of the input matrix is too small to do something useful.')

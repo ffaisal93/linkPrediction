@@ -1,7 +1,13 @@
-import networkx as nx
-import pandas as pd
+from tabulate import tabulate
+from documentCentrality import document_centrality
 
-df = pd.read_csv('select_top_10_percent____from___select_A.csv')
-#Graphtype = nx.Graph()
-#G = nx.from_pandas_edgelist(df, edge_attr='art_year', create_using=Graphtype)
-print(df.head())
+
+def prm(df):
+    print(tabulate(df, headers='keys', tablefmt="fancy_grid"))
+
+
+if __name__ == '__main__':
+    TD = [[1, 2, 3, 4], [2, 3, 4, 5], [1, 2, 7, 8], [3, 5, 1, 2]]
+    TD = [[1, 0, 1], [0, 1, 1], [0, 0, 1], [1, 1, 1], [0, 0, 1], [1, 0, 0]]
+    Cd, Ct = document_centrality(TD, 20)
+    print(Cd, Ct)
