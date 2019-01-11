@@ -1,7 +1,6 @@
 from tabulate import tabulate
 from documentCentrality import document_centrality
 
-
 def prm(df):
     print(tabulate(df, headers='keys', tablefmt="fancy_grid"))
 
