@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import networkx as nx
 import utils as ut
+import community
 from documentCentrality import document_centrality
 
 
@@ -51,6 +52,79 @@ def build_feature_set(df, kl, g, type):
     return node_feature
 
 
+def feature_partition(g):
+    d_c = {}
+    partition = community.best_partition(g)
+    g_main_com = g.copy()
+    for com in set(partition.values()):
+        list_nodes = [node for node in partition.keys() if partition[node] == com]
+        H = g_main_com.subgraph(list_nodes)
+        d_c[com] = nx.degree_centrality(H)
+    return partition, d_c
+
+
+def feature_y_weight(g, node, year, year_score, max_year_weight):
+    y_weight = 0
+    for y in g.nodes[node]['year']:
+        if y <= year:
+            y_weight = y_weight + year_score[y]
+            y_weight = y_weight / max_year_weight
+        else:
+            pass
+    return y_weight
+
+
+def feature_node_type(p1, g):
+    p2 = set()
+    ch = set()
+    for p in p1:
+        nb1 = set(nx.all_neighbors(g, p))
+        p2.update(nb1)
+        for nbs in nb1:
+            nb2 = set(nx.all_neighbors(g, nbs))
+            ch.update(nb2)
+    p2 = p2.difference(p1)
+    ch = ch.difference(p1, p2)
+    guest = set(g.nodes()).difference(p1, p2, ch)
+    return p2, ch, guest
+
+
+def dynamic_graph_feature_set(df, key_list, g_parent, g_train, g_train_static, time):
+    ts_train = time[1]
+    ts_test = time[2]
+    it_index = time[4]
+    node_feature = {}
+    year_score = {}
+    max_year_weight = sum(range(1, ts_test - ts_train + 1, 1))
+    parent_keys = parent_key_from_parent_graph(df, key_list, g_parent, g_train, time)
+    for t in range(ts_train, ts_test, it_index):
+        year_score[t] = t - ts_train + 1
+        p1 = parent_keys.intersection(set(g_train[t].nodes()))
+        p2, ch, guest = feature_node_type(p1, g_train[t])
+        #print(len(p1),len(p2),len(ch),len(guest))
+        parent_keys = p1.union(p2)
+        partition, d_c = feature_partition(g_train[t])
+        node_feature[t] = build_feature_set(df, key_list, g_train[t], "train")
+        node_feature[t]['partition_id'] = node_feature[t].apply(lambda row:
+                                                                partition[row['node_index']], axis=1)
+        node_feature[t]['partition_cnt'] = node_feature[t].apply(lambda row:
+                                                                 d_c[partition[row['node_index']]]
+                                                                 [row['node_index']], axis=1)
+        node_feature[t]['y_weight'] = node_feature[t].apply(lambda row:
+                                                            feature_y_weight(g_train_static,
+                                                                             row['node_index'],
+                                                                             t,
+                                                                             year_score,
+                                                                             max_year_weight), axis=1)
+        node_feature[t]['node_type'] = node_feature[t].apply(lambda row:
+                                                             5 if row['node_index'] in p1
+                                                             else 3 if row['node_index'] in p2
+                                                             else 2 if row['node_index'] in guest
+                                                             else 1 if row['node_index'] in ch
+                                                             else 0, axis=1)
+    return node_feature
+
+
 def parent_key_from_parent_graph(df, key_list, g_parent, g_train, time, list_range=10):
     ts_train = time[1]
     ts_test = time[2]
@@ -69,7 +143,7 @@ def parent_key_from_parent_graph(df, key_list, g_parent, g_train, time, list_ran
     print("dist_aut_art:", dist_aut_art, "dist_y_weight:", dist_y_weight)
     parent_1st = parent_node_feature.sort_values('aut+art', ascending=False)
     parent_1st = parent_1st.reset_index()
-    #parent_1st.plot(y=["count", "y_weight", "aut+art"], figsize=(20, 5))
+    # parent_1st.plot(y=["count", "y_weight", "aut+art"], figsize=(20, 5))
     parent_1st_set = set(parent_1st['node_index'][0:list_range])
 
     return parent_1st_set
