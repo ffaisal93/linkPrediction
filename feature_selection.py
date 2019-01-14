@@ -205,25 +205,25 @@ def train_data_frame_dynamic(train_data, node_feature, g):
     #                                                     gr.node_label_find(key_list,row[0][1]).lower().split()) ,axis=1)
 
 
-    resource_allocation = list(nx.resource_allocation_index(g, list(train_data['row_name'])))
-    jaccard_coef = list(nx.jaccard_coefficient(g, list(train_data['row_name'])))
-    adamic = list(nx.adamic_adar_index(g, list(train_data['row_name'])))
-    pref = list(nx.preferential_attachment(g, list(train_data['row_name'])))
-    train_data['res_aloc'] = list(zip(*resource_allocation))[2]
-    train_data['jac_coef'] = list(zip(*jaccard_coef))[2]
-    train_data['adamic'] = list(zip(*adamic))[2]
-    train_data['pref'] = list(zip(*pref))[2]
+    # resource_allocation = list(nx.resource_allocation_index(g, list(train_data['row_name'])))
+    # jaccard_coef = list(nx.jaccard_coefficient(g, list(train_data['row_name'])))
+    # adamic = list(nx.adamic_adar_index(g, list(train_data['row_name'])))
+    # pref = list(nx.preferential_attachment(g, list(train_data['row_name'])))
+    # train_data['res_aloc'] = list(zip(*resource_allocation))[2]
+    # train_data['jac_coef'] = list(zip(*jaccard_coef))[2]
+    # train_data['adamic'] = list(zip(*adamic))[2]
+    # train_data['pref'] = list(zip(*pref))[2]
 
-    # train_data['aut'] = ut.min_max_norm(train_data['aut'])
-    # train_data['art'] = ut.min_max_norm(train_data['art'])
-    # train_data['af1'] = ut.min_max_norm(train_data['af1'])
-    # train_data['af2'] = ut.min_max_norm(train_data['af2'])
-    # train_data['coun'] = ut.min_max_norm(train_data['coun'])
-    # train_data['close'] = ut.min_max_norm(train_data['close'])
-    # train_data['type'] = ut.min_max_norm(train_data['type'])
-    # train_data['y_weight'] = ut.min_max_norm(train_data['y_weight'])
-    # train_data['part_cnt'] = ut.min_max_norm(train_data['part_cnt'])
-    # train_data['path3'] = ut.min_max_norm(train_data['path3'])
+    train_data['aut'] = ut.min_max_norm(train_data['aut'])
+    train_data['art'] = ut.min_max_norm(train_data['art'])
+    train_data['af1'] = ut.min_max_norm(train_data['af1'])
+    train_data['af2'] = ut.min_max_norm(train_data['af2'])
+    train_data['coun'] = ut.min_max_norm(train_data['coun'])
+    train_data['close'] = ut.min_max_norm(train_data['close'])
+    train_data['type'] = ut.min_max_norm(train_data['type'])
+    train_data['y_weight'] = ut.min_max_norm(train_data['y_weight'])
+    train_data['part_cnt'] = ut.min_max_norm(train_data['part_cnt'])
+    train_data['path3'] = ut.min_max_norm(train_data['path3'])
 
     return train_data
 
