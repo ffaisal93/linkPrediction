@@ -36,21 +36,36 @@ def build_graph(g, df, kl, nodes, t0, t1):
         for label in row["keyword"]:
             node_id = node_key_find(kl, label)
             if node_id in nodes:
+                if type(row["affiliation_1"]) is not list:
+                    row["affiliation_1"] = ['not found']
+                if type(row["affiliation_2"]) is not list:
+                    row["affiliation_2"] = ['not found']
+                if type(row["country"]) is not list:
+                    row["country"] = ['not found']
                 if g.has_node(node_id):
                     g.nodes[node_id]['art_id'].add(row["art_id"])
                     g.nodes[node_id]['year'].add(row["art_year"])
                     g.nodes[node_id]['title'].add(row["title"])
                     g.nodes[node_id]['author'].update(row["author_name"])
+                    g.nodes[node_id]['affiliation_1'].update(row["affiliation_1"])
+                    g.nodes[node_id]['affiliation_2'].update(row["affiliation_2"])
+                    g.nodes[node_id]['country'].update(row["country"])
                 else:
                     art_id = {row["art_id"]}
                     year = {row["art_year"]}
                     title = {row["title"]}
                     author = set(row["author_name"])
+                    affiliation_1 = set(row["affiliation_1"])
+                    affiliation_2 = set(row["affiliation_2"])
+                    country = set(row["country"])
                     g.add_node(node_id,
                                art_id=art_id,
                                year=year,
                                title=title,
-                               author=author)
+                               author=author,
+                               affiliation_1=affiliation_1,
+                               affiliation_2=affiliation_2,
+                               country=country)
     # edge insert
     for index, row in g_df.iterrows():
         edges = list(itertools.combinations(row["keyword"], 2))

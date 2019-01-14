@@ -1,5 +1,5 @@
 import pandas as pd
-
+from pylab import *
 
 def keyword_split(df, key):
     df[key] = df[key].str.split("; ", n=20, expand=False)
@@ -29,3 +29,12 @@ def shuffling(df, freq):
     df = pd.concat([pos, neg])
     df = df.sample(frac=1).reset_index(drop=True)
     return df
+
+
+def arrayToList(arr):
+    if type(arr) == type(array([])):
+        return arrayToList(arr.tolist())
+    elif type(arr) == type([]):
+        return [arrayToList(a) for a in arr]
+    else:
+        return arr
