@@ -3,7 +3,6 @@ import numpy as np
 import networkx as nx
 import utils as ut
 import community
-import itertools
 from documentCentrality import document_centrality
 
 
@@ -153,9 +152,9 @@ def dynamic_graph_feature_set(df, key_list, train_data, g_parent, g_train, g_tra
                                                                              year_score,
                                                                              max_year_weight), axis=1)
         node_feature[t]['node_type'] = node_feature[t].apply(lambda row:
-                                                             5 if row['node_index'] in p1
-                                                             else 3 if row['node_index'] in p2
-                                                             else 2 if row['node_index'] in guest
+                                                             10 if row['node_index'] in p1
+                                                             else 5 if row['node_index'] in p2
+                                                             else 3 if row['node_index'] in guest
                                                              else 1 if row['node_index'] in ch
                                                              else 0, axis=1)
         train_data[t] = train_data_frame_dynamic(train_data[t], node_feature[t], g_train[t])
@@ -199,20 +198,32 @@ def train_data_frame_dynamic(train_data, node_feature, g):
                                            len(list(nx.all_simple_paths
                                                     (g, source=row[0][0], target=row[0][1],
                                                      cutoff=3))), axis=1)
+    train_data['cm'] = train_data.apply(lambda row:
+                                           len(list(nx.common_neighbors
+                                                    (g, row[0][0], row[0][1]))), axis=1)
     # train_data[t]['semantic_sim']=train_data[t].apply(lambda row:
     #                                                     word_vectors.n_similarity(
     #                                                         gr.node_label_find(key_list,row[0][0]).lower().split(),
     #                                                     gr.node_label_find(key_list,row[0][1]).lower().split()) ,axis=1)
 
+    train_data['type1'] = train_data.apply(lambda row:
+                                           (types[row['row_name'][0]] *
+                                            len(g.nodes[row['row_name'][0]]['art_id'])+
+                                            len(g.nodes[row['row_name'][1]]['art_id'])*
+                                            types[row['row_name'][1]]), axis=1)
+    train_data['y_weight1'] = train_data.apply(lambda row:
+                                               (year[row['row_name'][0]] , year[row['row_name'][1]]), axis=1)
 
-    # resource_allocation = list(nx.resource_allocation_index(g, list(train_data['row_name'])))
-    # jaccard_coef = list(nx.jaccard_coefficient(g, list(train_data['row_name'])))
-    # adamic = list(nx.adamic_adar_index(g, list(train_data['row_name'])))
-    # pref = list(nx.preferential_attachment(g, list(train_data['row_name'])))
-    # train_data['res_aloc'] = list(zip(*resource_allocation))[2]
-    # train_data['jac_coef'] = list(zip(*jaccard_coef))[2]
-    # train_data['adamic'] = list(zip(*adamic))[2]
-    # train_data['pref'] = list(zip(*pref))[2]
+
+
+    resource_allocation = list(nx.resource_allocation_index(g, list(train_data['row_name'])))
+    jaccard_coef = list(nx.jaccard_coefficient(g, list(train_data['row_name'])))
+    adamic = list(nx.adamic_adar_index(g, list(train_data['row_name'])))
+    pref = list(nx.preferential_attachment(g, list(train_data['row_name'])))
+    train_data['res_aloc'] = list(zip(*resource_allocation))[2]
+    train_data['jac_coef'] = list(zip(*jaccard_coef))[2]
+    train_data['adamic'] = list(zip(*adamic))[2]
+    train_data['pref'] = list(zip(*pref))[2]
 
     train_data['aut'] = ut.min_max_norm(train_data['aut'])
     train_data['art'] = ut.min_max_norm(train_data['art'])
@@ -224,14 +235,20 @@ def train_data_frame_dynamic(train_data, node_feature, g):
     train_data['y_weight'] = ut.min_max_norm(train_data['y_weight'])
     train_data['part_cnt'] = ut.min_max_norm(train_data['part_cnt'])
     train_data['path3'] = ut.min_max_norm(train_data['path3'])
+    train_data['cm'] = ut.min_max_norm(train_data['cm'])
+    train_data['pref'] = ut.min_max_norm(train_data['pref'])
+    train_data['type1'] = ut.min_max_norm(train_data['type1'])
+
+
 
     return train_data
 
 
-def parent_key_from_parent_graph(df, key_list, g_parent, g_train, time, list_range=10):
+def parent_key_from_parent_graph(df, key_list, g_parent, g_train, time):
     ts_train = time[1]
     ts_test = time[2]
     it_index = time[4]
+    list_range = time[5]
     parent_node_feature = build_feature_set(df, key_list, g_parent, "parent")
     for t in range(ts_train, ts_test, it_index):
         parent_node_feature['count'] = parent_node_feature.apply(lambda row:
