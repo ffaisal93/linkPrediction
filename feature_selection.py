@@ -87,23 +87,36 @@ def build_feature_set(df, kl, g, type):
     return node_feature
 
 
-def feature_partition(g):
-    d_c = {}
-    partition = community.best_partition(g)
-    g_main_com = g.copy()
-    for com in set(partition.values()):
-        list_nodes = [node for node in partition.keys() if partition[node] == com]
-        H = g_main_com.subgraph(list_nodes)
-        d_c[com] = nx.degree_centrality(H)
-    return partition, d_c
+# def feature_partition(g, node_feature):
+#     # d_c = {}
+#     # partition = community.best_partition(g)
+#     # g_main_com = g.copy()
+#     # for com in set(partition.values()):
+#     #     list_nodes = [node for node in partition.keys() if partition[node] == com]
+#     #     H = g_main_com.subgraph(list_nodes)
+#     #     d_c[com] = nx.degree_centrality(H)
+#     # return partition, d_c
+#
+#     d_c = {}
+#     aut = dict(zip(node_feature['node_index'], node_feature['term_aut']))
+#     partition = community.best_partition(g, weight='weight')
+#     g_main_com = g.copy()
+#     for com in set(partition.values()):
+#         list_nodes = [node for node in partition.keys() if partition[node] == com]
+#         H = g_main_com.subgraph(list_nodes)
+#         x = np.array([aut[j] for j in list_nodes])
+#         maxv = set(x[np.argsort(x)[-3:]])
+#         s = [(j, aut[j]) if ((len(list_nodes) >= 2) and aut[j] in maxv) else (j, 0) for j in list_nodes]
+#         d_c[com] = dict(s)
+#     return partition, d_c
 
 
 def feature_y_weight(g, node, year, year_score, max_year_weight):
     y_weight = 0
     for y in g.nodes[node]['year']:
         if y <= year:
-            y_weight = y_weight + year_score[y]
-            y_weight = y_weight / max_year_weight
+            y_weight = y_weight + year_score[y] * len(g.nodes[node]['year'])
+        #    y_weight = y_weight / max_year_weight
         else:
             pass
     return y_weight
@@ -128,35 +141,80 @@ def dynamic_graph_feature_set(df, key_list, train_data, g_parent, g_train, g_tra
     ts_train = time[1]
     ts_test = time[2]
     it_index = time[4]
+    list_range = time[5]
     node_feature = {}
     year_score = {}
+    x1 = range(ts_test - ts_train + 1)
+    year_in = np.power(x1, 2)
     max_year_weight = sum(range(1, ts_test - ts_train + 1, 1))
-    parent_keys = parent_key_from_parent_graph(df, key_list, g_parent, g_train, time)
+    parent_keys_aut, parent_keys_art, parent_keys_deg = parent_key_from_parent_graph(df, key_list, g_parent, g_train, time)
     for t in range(ts_train, ts_test, it_index):
-        year_score[t] = t - ts_train + 1
-        p1 = parent_keys.intersection(set(g_train[t].nodes()))
-        p2, ch, guest = feature_node_type(p1, g_train[t])
-        # print(len(p1),len(p2),len(ch),len(guest))
-        parent_keys = p1.union(p2)
-        partition, d_c = feature_partition(g_train[t])
         node_feature[t] = build_feature_set(df, key_list, g_train[t], "train")
-        node_feature[t]['partition_id'] = node_feature[t].apply(lambda row:
-                                                                partition[row['node_index']], axis=1)
-        node_feature[t]['partition_cnt'] = node_feature[t].apply(lambda row:
-                                                                 d_c[partition[row['node_index']]]
-                                                                 [row['node_index']], axis=1)
+        node_feature[t]['degree'] = node_feature[t].apply(lambda row:
+                                                          len(g_train[t][row['node_index']]), axis=1)
+        year_score[t] = year_in[t - ts_train + 1]
+
+        #  -----------------------------------------------------------------
+        p1_aut = parent_keys_aut.intersection(set(g_train[t].nodes()))
+        p2_aut, ch_aut, guest_aut = feature_node_type(p1_aut, g_train[t])
+        # print(len(p1),len(p2),len(ch),len(guest))
+        #parent_keys = p1.union(p2)
+        parent_keys_aut = node_feature[t].sort_values('term_aut', ascending=False)
+        parent_keys_aut = parent_keys_aut.reset_index()
+        parent_keys_aut = set(parent_keys_aut['node_index'][0:list_range])
+
+
+        p1_art = parent_keys_art.intersection(set(g_train[t].nodes()))
+        p2_art, ch_art, guest_art = feature_node_type(p1_art, g_train[t])
+        #parent_keys_art = p1_art.union(p2_art)
+        parent_keys_art = node_feature[t].sort_values('term_art', ascending=False)
+        parent_keys_art = parent_keys_art.reset_index()
+        parent_keys_art = set(parent_keys_art['node_index'][0:list_range])
+
+        p1_deg = parent_keys_deg.intersection(set(g_train[t].nodes()))
+        p2_deg, ch_deg, guest_deg = feature_node_type(p1_deg, g_train[t])
+        #parent_keys_deg = p1_deg.union(p2_deg)
+        parent_keys_deg = node_feature[t].sort_values('degree', ascending=False)
+        parent_keys_deg = parent_keys_deg.reset_index()
+        parent_keys_deg = set(parent_keys_deg['node_index'][0:list_range])
+
+      #  --------------------------------------------------
+       # node_feature[t]['term_aut'] = ut.min_max_norm(node_feature[t]['term_aut'])
+       #  partition, d_c = feature_partition(g_train[t], node_feature[t])
+       #  node_feature[t]['partition_id'] = node_feature[t].apply(lambda row:
+       #                                                          partition[row['node_index']], axis=1)
+       #  node_feature[t]['partition_cnt'] = node_feature[t].apply(lambda row:
+       #                                                           d_c[partition[row['node_index']]]
+       #                                                           [row['node_index']], axis=1)
+
         node_feature[t]['y_weight'] = node_feature[t].apply(lambda row:
                                                             feature_y_weight(g_train_static,
                                                                              row['node_index'],
                                                                              t,
                                                                              year_score,
                                                                              max_year_weight), axis=1)
-        node_feature[t]['node_type'] = node_feature[t].apply(lambda row:
-                                                             10 if row['node_index'] in p1
-                                                             else 5 if row['node_index'] in p2
-                                                             else 3 if row['node_index'] in guest
-                                                             else 1 if row['node_index'] in ch
+        node_feature[t]['node_type_aut'] = node_feature[t].apply(lambda row:
+                                                             20 if row['node_index'] in p1_aut
+                                                             else 5 if row['node_index'] in p2_aut
+                                                             else 3 if row['node_index'] in guest_aut
+                                                             else 1 if row['node_index'] in ch_aut
                                                              else 0, axis=1)
+
+        #--------------------------------------------------------------------------------
+        node_feature[t]['node_type_art'] = node_feature[t].apply(lambda row:
+                                                             20 if row['node_index'] in p1_art
+                                                             else 5 if row['node_index'] in p2_art
+                                                             else 3 if row['node_index'] in guest_art
+                                                             else 1 if row['node_index'] in ch_art
+                                                             else 0, axis=1)
+        node_feature[t]['node_type_deg'] = node_feature[t].apply(lambda row:
+                                                             20 if row['node_index'] in p1_deg
+                                                             else 5 if row['node_index'] in p2_deg
+                                                             else 3 if row['node_index'] in guest_deg
+                                                             else 1 if row['node_index'] in ch_deg
+                                                             else 0, axis=1)
+        #--------------------------------------------------------------------------------
+
         train_data[t] = train_data_frame_dynamic(train_data[t], node_feature[t], g_train[t])
     return node_feature, train_data
 
@@ -168,10 +226,9 @@ def train_data_frame_dynamic(train_data, node_feature, g):
     coun = dict(zip(node_feature['node_index'], node_feature['term_coun']))
     art = dict(zip(node_feature['node_index'], node_feature['term_art']))
     closeness = dict(zip(node_feature['node_index'], node_feature['closeness']))
-    part_id = dict(zip(node_feature['node_index'], node_feature['partition_id']))
-    types = dict(zip(node_feature['node_index'], node_feature['node_type']))
+    # part_id = dict(zip(node_feature['node_index'], node_feature['partition_id']))
     year = dict(zip(node_feature['node_index'], node_feature['y_weight']))
-    part_cnt = dict(zip(node_feature['node_index'], node_feature['partition_cnt']))
+    # part_cnt = dict(zip(node_feature['node_index'], node_feature['partition_cnt']))
     train_data['aut'] = train_data.apply(lambda row:
                                          aut[row['row_name'][0]] * aut[row['row_name'][1]], axis=1)
     train_data['art'] = train_data.apply(lambda row:
@@ -181,41 +238,71 @@ def train_data_frame_dynamic(train_data, node_feature, g):
     train_data['af2'] = train_data.apply(lambda row:
                                          af2[row['row_name'][0]] * af2[row['row_name'][1]], axis=1)
     train_data['coun'] = train_data.apply(lambda row:
-                                         coun[row['row_name'][0]] * coun[row['row_name'][1]], axis=1)
+                                          coun[row['row_name'][0]] * coun[row['row_name'][1]], axis=1)
     train_data['close'] = train_data.apply(lambda row:
                                            closeness[row['row_name'][0]] + closeness[row['row_name'][1]], axis=1)
-    train_data['part'] = train_data.apply(lambda row:
-                                          1 if part_id[row['row_name'][0]] == part_id[row['row_name'][1]] else
-                                          0, axis=1)
+    # train_data['part'] = train_data.apply(lambda row:
+    #                                       1 if part_id[row['row_name'][0]] == part_id[row['row_name'][1]] else
+    #                                       0, axis=1)
     train_data['y_weight'] = train_data.apply(lambda row:
-                                              year[row['row_name'][0]] + year[row['row_name'][1]], axis=1)
-    train_data['type'] = train_data.apply(lambda row:
-                                          types[row['row_name'][0]] * types[row['row_name'][1]], axis=1)
-    train_data['part_cnt'] = train_data.apply(lambda row:
-                                              part_cnt[row['row_name'][0]] *
-                                              part_cnt[row['row_name'][1]], axis=1)
+                                              year[row['row_name'][0]] * year[row['row_name'][1]], axis=1)
+    # train_data['type'] = train_data.apply(lambda row:
+    #                                       types[row['row_name'][0]] * types[row['row_name'][1]], axis=1)
+    # train_data['part_cnt'] = train_data.apply(lambda row:
+    #                                           part_cnt[row['row_name'][0]] *
+    #                                           part_cnt[row['row_name'][1]]
+    #                                           , axis=1)
     train_data['path3'] = train_data.apply(lambda row:
                                            len(list(nx.all_simple_paths
                                                     (g, source=row[0][0], target=row[0][1],
                                                      cutoff=3))), axis=1)
     train_data['cm'] = train_data.apply(lambda row:
-                                           len(list(nx.common_neighbors
-                                                    (g, row[0][0], row[0][1]))), axis=1)
+                                        len(list(nx.common_neighbors
+                                                 (g, row[0][0], row[0][1]))), axis=1)
     # train_data[t]['semantic_sim']=train_data[t].apply(lambda row:
     #                                                     word_vectors.n_similarity(
     #                                                         gr.node_label_find(key_list,row[0][0]).lower().split(),
     #                                                     gr.node_label_find(key_list,row[0][1]).lower().split()) ,axis=1)
 
-    train_data['type1'] = train_data.apply(lambda row:
-                                           (types[row['row_name'][0]] *
-                                            len(g.nodes[row['row_name'][0]]['art_id'])+
-                                            len(g.nodes[row['row_name'][1]]['art_id'])*
-                                            types[row['row_name'][1]]), axis=1)
+
+
+    # --------------------------------------------------------------------------------
+    types_aut = dict(zip(node_feature['node_index'], node_feature['node_type_aut']))
+    types_art = dict(zip(node_feature['node_index'], node_feature['node_type_art']))
+    types_deg = dict(zip(node_feature['node_index'], node_feature['node_type_deg']))
+
+    train_data['typeaut'] = train_data.apply(lambda row:
+                                             (types_aut[row['row_name'][0]] *
+                                              len(g.nodes[row['row_name'][0]]['author']) +
+                                              len(g.nodes[row['row_name'][1]]['author']) *
+                                              types_aut[row['row_name'][1]]), axis=1)
+
+    train_data['typeart'] = train_data.apply(lambda row:
+                                             (types_art[row['row_name'][0]] *
+                                              len(g.nodes[row['row_name'][0]]['art_id']) +
+                                              len(g.nodes[row['row_name'][1]]['art_id']) *
+                                              types_art[row['row_name'][1]]), axis=1)
+
+
+    train_data['typenode'] = train_data.apply(lambda row:
+                                              (types_deg[row['row_name'][0]] *
+                                               len(g[row['row_name'][0]]) +
+                                               len(g[row['row_name'][1]]) *
+                                               types_deg[row['row_name'][1]]), axis=1)
+
     train_data['y_weight1'] = train_data.apply(lambda row:
-                                               (year[row['row_name'][0]] , year[row['row_name'][1]]), axis=1)
+                                               (year[row['row_name'][0]] *
+                                                types_deg[row['row_name'][0]] *
+                                                len(g[row['row_name'][0]])
+                                                + len(g[row['row_name'][1]]) *
+                                                types_deg[row['row_name'][1]] *
+                                                year[row['row_name'][1]]), axis=1)
 
-
-
+    train_data['y_weight1'] = ut.min_max_norm(train_data['y_weight1'])
+    train_data['typeart'] = ut.min_max_norm(train_data['typeart'])
+    train_data['typeaut'] = ut.min_max_norm(train_data['typeaut'])
+    train_data['typenode'] = ut.min_max_norm(train_data['typenode'])
+    # -------------------------------------------------------------------------------------------------------------
     resource_allocation = list(nx.resource_allocation_index(g, list(train_data['row_name'])))
     jaccard_coef = list(nx.jaccard_coefficient(g, list(train_data['row_name'])))
     adamic = list(nx.adamic_adar_index(g, list(train_data['row_name'])))
@@ -231,42 +318,39 @@ def train_data_frame_dynamic(train_data, node_feature, g):
     train_data['af2'] = ut.min_max_norm(train_data['af2'])
     train_data['coun'] = ut.min_max_norm(train_data['coun'])
     train_data['close'] = ut.min_max_norm(train_data['close'])
-    train_data['type'] = ut.min_max_norm(train_data['type'])
+    #train_data['type'] = ut.min_max_norm(train_data['type'])
     train_data['y_weight'] = ut.min_max_norm(train_data['y_weight'])
-    train_data['part_cnt'] = ut.min_max_norm(train_data['part_cnt'])
+    #train_data['part_cnt'] = ut.min_max_norm(train_data['part_cnt'])
     train_data['path3'] = ut.min_max_norm(train_data['path3'])
     train_data['cm'] = ut.min_max_norm(train_data['cm'])
     train_data['pref'] = ut.min_max_norm(train_data['pref'])
-    train_data['type1'] = ut.min_max_norm(train_data['type1'])
-
-
 
     return train_data
 
 
 def parent_key_from_parent_graph(df, key_list, g_parent, g_train, time):
-    ts_train = time[1]
-    ts_test = time[2]
-    it_index = time[4]
+
     list_range = time[5]
     parent_node_feature = build_feature_set(df, key_list, g_parent, "parent")
-    for t in range(ts_train, ts_test, it_index):
-        parent_node_feature['count'] = parent_node_feature.apply(lambda row:
-                                                                 row['count'] + 1 if
-                                                                 row['node_index'] in set(g_train[t].nodes()) else
-                                                                 row['count'], axis=1)
-    parent_node_feature['aut+art'] = ut.min_max_norm(parent_node_feature['aut+art'])
-    parent_node_feature['count'] = ut.min_max_norm(parent_node_feature['count'])
-    parent_node_feature['y_weight'] = ut.min_max_norm(parent_node_feature['y_weight'])
-    dist_aut_art = np.linalg.norm(parent_node_feature['aut+art'] - parent_node_feature['count'])
-    dist_y_weight = np.linalg.norm(parent_node_feature['y_weight'] - parent_node_feature['count'])
-    print("dist_aut_art:", dist_aut_art, "dist_y_weight:", dist_y_weight)
-    parent_1st = parent_node_feature.sort_values('aut+art', ascending=False)
-    parent_1st = parent_1st.reset_index()
-    # parent_1st.plot(y=["count", "y_weight", "aut+art"], figsize=(20, 5))
-    parent_1st_set = set(parent_1st['node_index'][0:list_range])
 
-    return parent_1st_set
+    parent_node_feature['degree'] = parent_node_feature.apply(lambda row: len(g_parent[row['node_index']]) , axis=1)
+    parent_node_feature['degree'] = ut.min_max_norm(parent_node_feature['degree'])
+
+
+    parent_aut = parent_node_feature.sort_values('term_aut', ascending=False)
+    parent_aut = parent_aut.reset_index()
+    parent_aut = set(parent_aut['node_index'][0:list_range])
+
+    parent_art = parent_node_feature.sort_values('term_art', ascending=False)
+    parent_art = parent_art.reset_index()
+    parent_art = set(parent_art['node_index'][0:list_range])
+
+    parent_deg = parent_node_feature.sort_values('degree', ascending=False)
+    parent_deg = parent_deg.reset_index()
+    parent_deg = set(parent_deg['node_index'][0:list_range])
+
+
+    return parent_aut, parent_art, parent_deg
 
 
 def drop_feature_columns(train_data, columns, time):
@@ -277,7 +361,6 @@ def drop_feature_columns(train_data, columns, time):
         for t in range(ts, te, it_index):
             train_data[t].drop(columns, inplace=True, axis=1)
     return train_data
-
 
 # def classify_by_feature(train_data, time):
 #     ts = time[1]

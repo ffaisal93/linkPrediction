@@ -3,6 +3,7 @@ import networkx as nx
 import utils as ut
 import numpy as np
 from keras.models import Model, Sequential
+from keras import optimizers
 from keras.layers import LSTM, Dense
 from keras.layers.normalization import BatchNormalization
 from keras.layers.core import Dense, Dropout, Activation, Reshape
@@ -114,6 +115,7 @@ def reshape_feature_data_for_classification(train_data, edge_list, time):
 
 
 def classification_model(X_train, X_test, y_train, y_test, data_len_dm, con, model_name):
+    adam = optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
     input_length = data_len_dm[0]
     input_dim = data_len_dm[1]
     output_dim = data_len_dm[2]
@@ -122,10 +124,10 @@ def classification_model(X_train, X_test, y_train, y_test, data_len_dm, con, mod
     model.add(LSTM(10, input_shape=(input_length, input_dim)))
     model.add(Dropout(0.2))
     model.add(BatchNormalization())
-    model.add(Dense(20, activation='relu'))
-    model.add(Dense(40, activation='relu'))
-    model.add(BatchNormalization())
-    model.add(Dropout(0.2))
+    model.add(Dense(4, activation='relu'))
+    # model.add(Dense(40, activation='relu'))
+    # model.add(BatchNormalization())
+    # model.add(Dropout(0.2))
     model.add(Dense(output_dim, activation='sigmoid'))
     model.compile(loss='binary_crossentropy',
                   optimizer='Adam',
