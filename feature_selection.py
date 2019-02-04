@@ -246,8 +246,6 @@ def train_data_frame_dynamic(train_data, node_feature, g):
     #                                       0, axis=1)
     train_data['y_weight'] = train_data.apply(lambda row:
                                               year[row['row_name'][0]] * year[row['row_name'][1]], axis=1)
-    # train_data['type'] = train_data.apply(lambda row:
-    #                                       types[row['row_name'][0]] * types[row['row_name'][1]], axis=1)
     # train_data['part_cnt'] = train_data.apply(lambda row:
     #                                           part_cnt[row['row_name'][0]] *
     #                                           part_cnt[row['row_name'][1]]
@@ -270,6 +268,8 @@ def train_data_frame_dynamic(train_data, node_feature, g):
     types_aut = dict(zip(node_feature['node_index'], node_feature['node_type_aut']))
     types_art = dict(zip(node_feature['node_index'], node_feature['node_type_art']))
     types_deg = dict(zip(node_feature['node_index'], node_feature['node_type_deg']))
+    train_data['type'] = train_data.apply(lambda row:
+                                          types_aut[row['row_name'][0]] * types_aut[row['row_name'][1]], axis=1)
 
     train_data['typeaut'] = train_data.apply(lambda row:
                                              (types_aut[row['row_name'][0]] *
@@ -292,10 +292,8 @@ def train_data_frame_dynamic(train_data, node_feature, g):
 
     train_data['y_weight1'] = train_data.apply(lambda row:
                                                (year[row['row_name'][0]] *
-                                                types_deg[row['row_name'][0]] *
                                                 len(g[row['row_name'][0]])
                                                 + len(g[row['row_name'][1]]) *
-                                                types_deg[row['row_name'][1]] *
                                                 year[row['row_name'][1]]), axis=1)
 
     train_data['y_weight1'] = ut.min_max_norm(train_data['y_weight1'])

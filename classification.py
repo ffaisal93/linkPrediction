@@ -124,10 +124,10 @@ def classification_model(X_train, X_test, y_train, y_test, data_len_dm, con, mod
     model.add(LSTM(10, input_shape=(input_length, input_dim)))
     model.add(Dropout(0.2))
     model.add(BatchNormalization())
-    model.add(Dense(4, activation='relu'))
-    # model.add(Dense(40, activation='relu'))
-    # model.add(BatchNormalization())
-    # model.add(Dropout(0.2))
+    model.add(Dense(20, activation='relu'))
+    model.add(Dense(40, activation='relu'))
+    model.add(BatchNormalization())
+    model.add(Dropout(0.2))
     model.add(Dense(output_dim, activation='sigmoid'))
     model.compile(loss='binary_crossentropy',
                   optimizer='Adam',
