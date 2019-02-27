@@ -44,6 +44,7 @@ def build_graph(g, df, kl, nodes, t0, t1):
                     row["country"] = ['not found']
                 if g.has_node(node_id):
                     g.nodes[node_id]['art_id'].add(row["art_id"])
+                    # g.nodes[node_id]['citation'].append(row["citation"])
                     g.nodes[node_id]['year'].add(row["art_year"])
                     g.nodes[node_id]['title'].add(row["title"])
                     g.nodes[node_id]['author'].update(row["author_name"])
@@ -52,6 +53,7 @@ def build_graph(g, df, kl, nodes, t0, t1):
                     g.nodes[node_id]['country'].update(row["country"])
                 else:
                     art_id = {row["art_id"]}
+                    # citation = [row["citation"]]
                     year = {row["art_year"]}
                     title = {row["title"]}
                     author = set(row["author_name"])
@@ -60,6 +62,7 @@ def build_graph(g, df, kl, nodes, t0, t1):
                     country = set(row["country"])
                     g.add_node(node_id,
                                art_id=art_id,
+                               # citation=citation,
                                year=year,
                                title=title,
                                author=author,

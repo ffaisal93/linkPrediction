@@ -136,7 +136,7 @@ def classification_model(X_train, X_test, y_train, y_test, data_len_dm, con, mod
                         shuffle=True,
                         batch_size=batch_size,
                         epochs=con[0],
-                        verbose=0)
+                        verbose=1)
 
     return model
 
@@ -145,6 +145,7 @@ def model_evaluate(model, X_test, y_test, batch_size, model_name):
     score = model.evaluate(X_test, y_test, batch_size=batch_size, verbose=1)
     y_pred = model.predict(X_test)
     fpr, tpr, thresholds = roc_curve(y_test, y_pred)
+    precision, recall, thresholds = precision_recall_curve(y_test, y_pred)
     auc_score = auc(fpr, tpr)
     model_result = {
         'model name': model_name,
@@ -152,6 +153,8 @@ def model_evaluate(model, X_test, y_test, batch_size, model_name):
         'test accuracy': score[1],
         'auc': auc_score,
         'false positive': fpr,
-        'true positive': tpr
+        'true positive': tpr,
+        'precision': precision,
+        'recall': recall
     }
     return model_result

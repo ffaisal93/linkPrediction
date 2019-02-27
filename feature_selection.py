@@ -179,7 +179,7 @@ def dynamic_graph_feature_set(df, key_list, train_data, g_parent, g_train, g_tra
         parent_keys_deg = set(parent_keys_deg['node_index'][0:list_range])
 
       #  --------------------------------------------------
-       # node_feature[t]['term_aut'] = ut.min_max_norm(node_feature[t]['term_aut'])
+        node_feature[t]['degrees'] = ut.min_max_norm(node_feature[t]['degree'])
        #  partition, d_c = feature_partition(g_train[t], node_feature[t])
        #  node_feature[t]['partition_id'] = node_feature[t].apply(lambda row:
        #                                                          partition[row['node_index']], axis=1)
