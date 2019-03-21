@@ -152,6 +152,9 @@ def dynamic_graph_feature_set(df, key_list, train_data, g_parent, g_train, g_tra
         node_feature[t] = build_feature_set(df, key_list, g_train[t], "train")
         node_feature[t]['degree'] = node_feature[t].apply(lambda row:
                                                           len(g_train[t][row['node_index']]), axis=1)
+        node_feature[t]['citation'] = node_feature[t].apply(lambda row:
+                                                          g_train[t].nodes[row['node_index']]
+                                                          ['citation'], axis=1)
         year_score[t] = year_in[t - ts_train + 1]
 
         #  -----------------------------------------------------------------

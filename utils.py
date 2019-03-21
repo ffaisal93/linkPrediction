@@ -1,5 +1,6 @@
 import pandas as pd
 from pylab import *
+import pickle
 
 def keyword_split(df, key):
     df[key] = df[key].str.split("; ", n=20, expand=False)
@@ -9,7 +10,7 @@ def keyword_split(df, key):
 def load_dataset(filepath, column_split):
     df = pd.read_csv(filepath[0])
     key_list = pd.read_csv(filepath[1])
-    for i in range(0,len(column_split)):
+    for i in range(0, len(column_split)):
         df = keyword_split(df, column_split[i])
     return df, key_list
 
@@ -39,6 +40,7 @@ def arrayToList(arr):
     else:
         return arr
 
+
 def lighten_color(color, amount=0.5):
     """
     Lightens the given color by multiplying (1-luminosity) by the given amount.
@@ -57,3 +59,22 @@ def lighten_color(color, amount=0.5):
         c = color
     c = colorsys.rgb_to_hls(*mc.to_rgb(c))
     return colorsys.hls_to_rgb(c[0], 1 - amount * (1 - c[1]), c[2])
+
+
+###save data
+def save_data(data_path, data):
+    try:
+        data
+        with open(data_path, "wb") as f:
+            pickle.dump(data, f)
+            print(data_path)
+    except NameError:
+        print('data not exist')
+
+
+###load reslults
+def load_data(data_path):
+    with open(data_path, "rb") as f:
+        data = pickle.load(f)
+    print(data_path)
+    return data
