@@ -1,0 +1,13 @@
+*.gpickle
+*.pickle
+*.h5
+*.pkl
+*.png
+*.pdf
+graphs/apnea/*.gpickle
+graphs/obesity/*.gpickle
+graphs/
+dataframes/
+gephy/
+models/
+*.xml
