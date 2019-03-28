@@ -1,4 +1,4 @@
-# Link Prediction using metadata
+# Link Prediction using metadata information
 
 Performs scientific literature keyword-keyword co-occurrence prediction based on associated metadata based features. 
 
