@@ -10,4 +10,4 @@ graphs/
 dataframes/
 gephy/
 models/
-.xml
+*.xml
