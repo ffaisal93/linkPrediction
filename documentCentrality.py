@@ -2,6 +2,12 @@ import numpy as np
 
 
 def document_centrality(td, *args):
+    """
+    calculate recursive term centrality
+    :param td: adjacency metrix for bi-partite graph (eg. author-keyword)
+    :param args: (eg. no of iterations)
+    :return: calculated centrality arrays for the two attributes (eg. author and keyword)
+    """
     if len(args) > 0:
         n_it = args[0]
     else:

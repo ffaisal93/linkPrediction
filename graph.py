@@ -4,16 +4,37 @@ import os.path
 
 
 def node_key_find(kl, label):
+    """
+    given the keyword, return the integer id from the key list
+    :param kl: key list dataframe
+    :param label: keyword
+    :return: id
+    """
     key = kl[kl['keyword'] == label]['id'].iloc[0]
     return key
 
 
 def node_label_find(kl, key):
+    """
+    given the integer id, return the keyword from the key list
+    :param kl: key list dataframe
+    :param key: integer id
+    :return: keyword
+    """
     label = kl[kl['id'] == key]['keyword'].iloc[0]
     return label
 
 
 def nodes_intersection(df, kl, t0, t1, t2):
+    """
+    finds the set of nodes mutual to training period and test period
+    :param df: dataset
+    :param kl: key list
+    :param t0: parent year (previous year of training start year)
+    :param t1: training start year
+    :param t2: test year
+    :return: node set common in test-train period
+    """
     prelist = []
     postlist = []
     pre_df = df[(df['art_year'] >= t0) & (df['art_year'] < t1)]
@@ -30,6 +51,16 @@ def nodes_intersection(df, kl, t0, t1, t2):
 
 
 def build_graph(g, df, kl, nodes, t0, t1):
+    """
+    given the dataset, key list, common node set (training-test), start and end year build the networkx graph.
+    :param g: empty graph
+    :param df: dataset
+    :param kl: keyword list
+    :param nodes: common node set (training-test)
+    :param t0: training start year
+    :param t1: training end year+1
+    :return: prepared graph for (t0,t1) period
+    """
     g_df = df[(df['art_year'] >= t0) & (df['art_year'] < t1)]
     # node insert
     for index, row in g_df.iterrows():
@@ -62,6 +93,7 @@ def build_graph(g, df, kl, nodes, t0, t1):
                     affiliation_1 = set(row["affiliation_1"])
                     affiliation_2 = set(row["affiliation_2"])
                     country = set(row["country"])
+                    #### add node attributes
                     g.add_node(node_id,
                                art_id=art_id,
                                citation=citation,
@@ -79,6 +111,7 @@ def build_graph(g, df, kl, nodes, t0, t1):
             node2 = node_key_find(kl, edge[1])
             if (node1 in nodes) and (node2 in nodes) and (node1 != node2):
                 if not g.has_edge(node1, node2):
+                    ####add edge with weight attributes
                     g.add_edge(node1, node2, weight=1)
                 else:
                     g[node1][node2]['weight'] = g[node1][node2]['weight'] + 1
@@ -86,43 +119,69 @@ def build_graph(g, df, kl, nodes, t0, t1):
 
 
 def save_graph(g, name):
+    """
+    save graph into disk
+    :param g: graph to save
+    :param name: file name with path
+    """
     nx.write_gpickle(g, name)
 
 
 def load_graph(name):
+    """
+    load networkx graph from disk
+    :param name: file name with path
+    :return: loaded graph
+    """
     g = nx.read_gpickle(name)
     return g
 
 
 # graph build and save
 def dynamic_train_test_graph_build(df, key_list, graphpath, time):
-    ts = time[1]
-    te = time[2]
-    test_range = time[3]
-    it_index = time[4]
-    graph_type = ['parent', 'train', 'test']
+    """
+    build all graphs (dynamic, static, test) required for the experiments
+    :param df: dataset in a dataframe
+    :param key_list: keyword list with integer ids
+    :param graphpath: path to save all graphs
+    :param time: array containing time informations
+    """
+    ts = time[1]    ####start year of training
+    te = time[2]    ####end year of training+1
+    test_range = time[3]    ####duration of test period (years)
+    it_index = time[4]  ####number of year in each iteration (1 year)
+    graph_type = ['parent', 'train', 'test']    ####parent: previous year of train period, train graphs, test graphs
     # nodes intersection between train and test
-    nodes = nodes_intersection(df, key_list, ts, te, te + test_range)
+    nodes = nodes_intersection(df, key_list, ts, te, te + test_range)   ####mutual nodes(training intersection test)
     print(len(nodes))
     # dynamic train graph build
     for t in range(ts, te + test_range, it_index):
         if t < te:
-            types = graph_type[1]
+            types = graph_type[1]   ####train graph
         else:
-            types = graph_type[2]
+            types = graph_type[2]   ####test graph
         g = nx.Graph()
-        graph = build_graph(g, df, key_list, nodes, t, t + 1)
+        graph = build_graph(g, df, key_list, nodes, t, t + 1)   ####build graph for year(t,t+1)
         file = types + "_graph_" + str(t)
         file_name = os.path.join(graphpath, file + ".gpickle")
-        save_graph(graph, file_name)
+        save_graph(graph, file_name)    ####save graph
         print(file_name + " saved,", "nodes:",
               len(graph.nodes()), "edges:", len(graph.edges()))
-    # static graph build
+    #### static graph build (parent graph, one graph for whole training period, test graph)
     for i in range(0, len(graph_type)):
         static_graph_build(df, key_list, graphpath, time, graph_type[i], nodes)
 
 
 def static_graph_build(df, key_list, graphpath, time, graph_type, nodes):
+    """
+    build static graphs (parent graph, one graph for whole training period, test graph)
+    :param df: dataset in dataframe
+    :param key_list: keyword list with integer id
+    :param graphpath: path to save graph
+    :param time: time information
+    :param graph_type: ['parent','train','test']
+    :param nodes: mutual nodes(train intersection test)
+    """
     if graph_type == 'parent':
         ts = time[0]
         te = time[1]
@@ -143,6 +202,12 @@ def static_graph_build(df, key_list, graphpath, time, graph_type, nodes):
 
 # load all graphs
 def graph_load(graphpath, time):
+    """
+    Load all graphs(training, test, parent) given the time period
+    :param graphpath: path to load graph from
+    :param time: time information
+    :return: loaded graphs: dynamic train, test, parent, static (train, test)
+    """
     ts = time[1]
     te = time[2]
     test_range = time[3]

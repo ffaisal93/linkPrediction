@@ -14,6 +14,12 @@ from sklearn.model_selection import train_test_split
 
 
 def classification_train_data_static(g_train, g_test):
+    """
+    prepare dataframe with non-connected node pair and label (pos-1,neg-0) column for static graph
+    :param g_train: static train graph
+    :param g_test: test graph
+    :return: prepared dataframe
+    """
     train_labels = []
     train_edge = []
     train_rows = list(nx.non_edges(g_train))
@@ -29,6 +35,13 @@ def classification_train_data_static(g_train, g_test):
 
 
 def classification_train_data_dynamic(g_train, g_test, static_edge_set):
+    """
+    prepare dataframe with non-connected node pair and label (pos-1,neg-0) column for dynamic graph
+    :param g_train: train graph
+    :param g_test: test graph
+    :param static_edge_set: set of non-connected node-pairs for whole training period
+    :return: prepared dataframe
+    """
     train_labels = []
     train_edge = []
     train_rows = list(nx.non_edges(g_train))
@@ -46,11 +59,28 @@ def classification_train_data_dynamic(g_train, g_test, static_edge_set):
 
 
 def classification_test_data_static(g_test):
+    """
+    dataframe containing test graph edges
+    :param g_test: test graph
+    :return: prepared dataframe
+    """
     test_data = pd.DataFrame({'row_name': list(set(g_test.edges()))})
     return test_data
 
 
 def non_edge_feature_dataframe(g_train, g_test, g_parent, g_train_static, g_test_static, time, freq=5):
+    """
+    prepare all type of(dynamic, static) non-connected node pairs with labels(pos-1, neg-0)
+    dataframes and node pair list
+    :param g_train: dynamic train graph (dict of train graphs)
+    :param g_test: test graph
+    :param g_parent: parent graph (previous year of training period)
+    :param g_train_static: static train graph
+    :param g_test_static: test graph static (same as test graph in our experiment as our test period is 1 year)
+    :param time: time information
+    :param freq: positive:negative instance ratio in train data (eg. freq=10 then pos:neg=1:10)
+    :return: train_data, train_data_static, parent_data, test_data_static, all non connected node-pair list
+    """
     train_data = {}
     total_pos = set()
     total_neg = set()
@@ -80,6 +110,11 @@ def non_edge_feature_dataframe(g_train, g_test, g_parent, g_train_static, g_test
 
 
 def print_attributes(data, type):
+    """
+    print data size, number of positive instances and negative instances
+    :param data: data for which, information is printed
+    :param type: type of data (eg. train data, test data)
+    """
     print(type)
     if type == 'train' or type == 'parent':
         print('positive train:', len(data[(data['label'] == 1)]),
@@ -90,6 +125,13 @@ def print_attributes(data, type):
 
 
 def reshape_feature_data_for_classification(train_data, edge_list, time):
+    """
+    Reshape dict of train dataframe for 3-dimensional lstm input data preperation
+    :param train_data: dict of non-connected node pair with feature dataframe
+    :param edge_list: list of all non-connected node pairs
+    :param time: time information
+    :return: reshaped X data, y data and dimension information=[data size, input dimension, output dimension]
+    """
     ts = time[1]
     te = time[2]
     it_index = time[4]
@@ -116,11 +158,24 @@ def reshape_feature_data_for_classification(train_data, edge_list, time):
 
 
 def classification_model(X_train, X_test, y_train, y_test, data_len_dm, con, model_name):
+    """
+    function to perform model training or LSTM classification training
+    :param X_train: train dataset
+    :param X_test: class labels of training data
+    :param y_train: test dataset
+    :param y_test: class labels of training data
+    :param data_len_dm: dimension information=[data size, input dimension, output dimension]
+    :param con: [number of epochs, batch size in each epoch]
+    :param model_name: based on feature name
+    :return: trained model
+    """
+    #####optimizer settings
     adam = optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
     input_length = data_len_dm[0]
     input_dim = data_len_dm[1]
     output_dim = data_len_dm[2]
     batch_size = 64
+    #### forecasting layers
     model = Sequential()
     model.add(LSTM(10, input_shape=(input_length, input_dim)))
     model.add(Dropout(0.2))
@@ -129,6 +184,7 @@ def classification_model(X_train, X_test, y_train, y_test, data_len_dm, con, mod
     model.add(Dense(40, activation='relu'))
     model.add(BatchNormalization())
     model.add(Dropout(0.2))
+    #### final classification layer
     model.add(Dense(output_dim, activation='sigmoid'))
     model.compile(loss='binary_crossentropy',
                   optimizer='Adam',
@@ -143,6 +199,15 @@ def classification_model(X_train, X_test, y_train, y_test, data_len_dm, con, mod
 
 
 def model_evaluate(model, X_test, y_test, batch_size, model_name):
+    """
+    evaluate trained model on test dataset and prepare evaluation information dict
+    :param model: trained model
+    :param X_test: test data
+    :param y_test: labels for test data
+    :param batch_size: batch size
+    :param model_name: based on feature name
+    :return: evaluation result = {feature name, loss, acc,auc,fpr,tpr,precision,recall}
+    """
     score = model.evaluate(X_test, y_test, batch_size=batch_size, verbose=1)
     y_pred = model.predict(X_test)
     fpr, tpr, thresholds = roc_curve(y_test, y_pred)

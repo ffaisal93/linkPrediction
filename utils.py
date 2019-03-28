@@ -1,13 +1,27 @@
 import pandas as pd
 from pylab import *
 import pickle
+import os.path
+
 
 def keyword_split(df, key):
+    """
+    split sub column elements(separated by ;) and put it in a list
+    :param df: dataset in a dataframe
+    :param key: column name
+    :return: dataset after splitting sub-column values
+    """
     df[key] = df[key].str.split("; ", n=20, expand=False)
     return df
 
 
 def load_dataset(filepath, column_split):
+    """
+    load dataset and keylist(keyword, integer id) into dataframes
+    :param filepath: filepath[0]:dataset, filepath[1]:keyword list
+    :param column_split: array of column names where we split the sub column attributes
+    :return:
+    """
     df = pd.read_csv(filepath[0])
     key_list = pd.read_csv(filepath[1])
     for i in range(0, len(column_split)):
@@ -16,6 +30,11 @@ def load_dataset(filepath, column_split):
 
 
 def min_max_norm(d):
+    """
+    min-max normalization
+    :param d: array to normalize
+    :return: normalized array
+    """
     d = (d - d.min()) / (d.max() - d.min())
     if d.isnull().any():
         d = 0
@@ -23,6 +42,12 @@ def min_max_norm(d):
 
 
 def shuffling(df, freq):
+    """
+    shuffling dataframe to make pos:neg ratio 1:freq
+    :param df: training dataframe
+    :param freq: ratio value
+    :return: sampled dataframe
+    """
     neg = df[(df['label'] == 0)]
     pos = df[(df['label'] == 1)]
     pos_len = len(pos)
@@ -33,6 +58,11 @@ def shuffling(df, freq):
 
 
 def arrayToList(arr):
+    """
+    convert input type to list of array
+    :param arr: input (types can be array / array([]) / array )
+    :return:
+    """
     if type(arr) == type(array([])):
         return arrayToList(arr.tolist())
     elif type(arr) == type([]):
@@ -62,19 +92,40 @@ def lighten_color(color, amount=0.5):
 
 
 ###save data
-def save_data(data_path, data):
+def save_data(data, data_path, domain, name, time):
+    """
+    save data to .pkl file
+    :param data: data to save
+    :param data_path: file saving path
+    :param domain: obesity/apnea
+    :param name: data name (eg. results, train_data etc)
+    :param time: training time information
+
+    """
     try:
         data
-        with open(data_path, "wb") as f:
+        filename = domain + "-" + name + "_" + str(time[1]) + "-" + str(time[2]) + ".pkl"
+        filename_path = os.path.join(data_path, filename)
+        with open(filename_path, "wb") as f:
             pickle.dump(data, f)
-            print(data_path)
+            print(filename_path)
     except NameError:
-        print('data not exist')
+        print(name + ' not exist')
 
 
 ###load reslults
-def load_data(data_path):
-    with open(data_path, "rb") as f:
+def load_data(data_path, domain, name, time):
+    """
+    load data from .pkl file
+    :param data_path: path where the file is located
+    :param domain: obesity/apnea
+    :param name: data name (eg. results, train_data etc)
+    :param time: training time information
+    :return: loaded data
+    """
+    filename = domain + "-" + name + "_" + str(time[1]) + "-" + str(time[2]) + ".pkl"
+    filename_path = os.path.join(data_path, filename)
+    with open(filename_path, "rb") as f:
         data = pickle.load(f)
     print(data_path)
     return data
