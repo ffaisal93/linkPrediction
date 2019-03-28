@@ -1,9 +1,9 @@
-.gpickle
-.pickle
-.h5
-.pkl
-.png
-.pdf
+*.gpickle
+*.pickle
+*.h5
+*.pkl
+*.png
+*.pdf
 graphs/apnea/*.gpickle
 graphs/obesity/*.gpickle
 graphs/
