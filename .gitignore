@@ -6,3 +6,7 @@
 .pdf
 graphs/apnea/*.gpickle
 graphs/obesity/*.gpickle
+graphs/
+dataframes/
+gephy/
+models/
