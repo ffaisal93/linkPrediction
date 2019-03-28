@@ -30,10 +30,10 @@ Performs scientific literature keyword-keyword co-occurrence prediction based on
 
 ### [Dataset](https://github.com/faisal-iut/linkPrediction/tree/master/dataset)
 
-* [Apnea dataset](https://github.com/faisal-iut/linkPrediction/blob/master/dataset/apnea-all%2C3.csv)
-* [Apnea keyword lists](https://github.com/faisal-iut/linkPrediction/blob/master/dataset/apnea-distinct_keyword.csv)
-* [Obesity dataset](https://github.com/faisal-iut/linkPrediction/blob/master/dataset/obesity-all%2C3.csv)
-* [Obesity keyword lists](https://github.com/faisal-iut/linkPrediction/blob/master/dataset/obesity-distinct_keyword.csv) 
+* [Apnea dataset](https://github.com/faisal-iut/linkPrediction/blob/master/dataset/apnea-all%2C3.csv) - All keywords are atleast 3-degree keywords
+* [Apnea keyword lists](https://github.com/faisal-iut/linkPrediction/blob/master/dataset/apnea-distinct_keyword.csv) - Keyword list with integer id
+* [Obesity dataset](https://github.com/faisal-iut/linkPrediction/blob/master/dataset/obesity-all%2C3.csv) - All keywords are atleast 3-degree keywords
+* [Obesity keyword lists](https://github.com/faisal-iut/linkPrediction/blob/master/dataset/obesity-distinct_keyword.csv) - Keyword list with integer id
 
 ### Usage
 1. Open [link_prediction](https://github.com/faisal-iut/linkPrediction/blob/master/link_prediction.ipynb) notebook. End-to-end link prediction experiment is done here (graph build, save, load -> training data prepare, save, load -> model training, save, evaluate -> result save, load -> figure generate, save) 
