@@ -274,14 +274,14 @@ def dynamic_graph_feature_set(df, key_list, train_data, g_parent, g_train, g_tra
         node_feature[t]['node_type_art'] = node_feature[t].apply(lambda row:
                                                                  20 if row['node_index'] in p1_art
                                                                  else 5 if row['node_index'] in p2_art
-                                                                 else 3 if row['node_index'] in guest_art
-                                                                 else 1 if row['node_index'] in ch_art
+                                                                 else 1 if row['node_index'] in guest_art
+                                                                 else 3 if row['node_index'] in ch_art
                                                                  else 0, axis=1)
         node_feature[t]['node_type_deg'] = node_feature[t].apply(lambda row:
                                                                  20 if row['node_index'] in p1_deg
                                                                  else 5 if row['node_index'] in p2_deg
-                                                                 else 3 if row['node_index'] in guest_deg
-                                                                 else 1 if row['node_index'] in ch_deg
+                                                                 else 1 if row['node_index'] in guest_deg
+                                                                 else 3 if row['node_index'] in ch_deg
                                                                  else 0, axis=1)
         ######----------------------------------------------------------------------------------------------------------
         #############################  dataframe non-connected node pair features ######################################
