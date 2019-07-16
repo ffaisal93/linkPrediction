@@ -19,7 +19,8 @@ Performs scientific literature keyword-keyword co-occurrence prediction based on
 
 ### Files
 
-* **link_prediction.ipynb -** End to end link prediction experiment
+* **link_prediction.ipynb -** End to end link prediction (direct classification using feature - no forecast) experiment
+* **timeseries_forecast.ipynb -** End to end link forecast-> classification experiment (first forecasting, then classification- the one used in this experiment)
 * **Link_Analysis.ipynb -** Data generation regarding keyword network evolution and associated characteristics
 * **timeseries.ipynb -** *LSTM* based Timeseries analysis of nodal degree 
 * **graphs.py -** Contains required functions to build, save and load graphs
