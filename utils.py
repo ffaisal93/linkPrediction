@@ -11,7 +11,7 @@ def keyword_split(df, key):
     :param key: column name
     :return: dataset after splitting sub-column values
     """
-    df[key] = df[key].str.split("; ", n=20, expand=False)
+    df[key] = df[key].str.split("; ", n=30, expand=False)
     return df
 
 
@@ -129,3 +129,9 @@ def load_data(data_path, domain, name, time):
         data = pickle.load(f)
     print(data_path)
     return data
+
+def scale(X, x_min, x_max):
+    nom = (X-X.min(axis=(0,1)))*(x_max-x_min)
+    denom = X.max(axis=(0,1)) - X.min(axis=(0,1))
+    denom[denom==0] = 1
+    return x_min + nom/denom

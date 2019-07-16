@@ -178,18 +178,18 @@ def feature_citation(g_parent, g_train, row, t, ts):
     :param ts: start year of training period
     :return: temporal citation score for a node
     """
-    cite_now = g_train[t].nodes[row['node_index']]['citation']
-    if t == ts:
-        g_prev = g_parent
-    else:
-        g_prev = g_train[t - 1]
-    if g_prev.has_node(row['node_index']):
-        cite_prev = g_prev.nodes[row['node_index']]['citation']
-    else:
-        cite_prev = 0
-    cite = abs(cite_now - cite_prev)
-    if cite == 0:
-        cite = 1
+    cite = g_train[t].nodes[row['node_index']]['citation']
+    # if t == ts:
+    #     g_prev = g_parent
+    # else:
+    #     g_prev = g_train[t - 1]
+    # if g_prev.has_node(row['node_index']):
+    #     cite_prev = g_prev.nodes[row['node_index']]['citation']
+    # else:
+    #     cite_prev = 0
+    # cite = abs(cite_now - cite_prev)
+    # if cite == 0:
+    #     cite = 1
     return cite
 
 
@@ -216,6 +216,7 @@ def dynamic_graph_feature_set(df, key_list, train_data, g_parent, g_train, g_tra
     max_year_weight = sum(range(1, ts_test - ts_train + 1, 1))
     parent_keys_aut, parent_keys_art, parent_keys_deg = parent_key_from_parent_graph(df, key_list, g_parent, g_train,
                                                                                      time)
+
     for t in range(ts_train, ts_test, it_index):
         ########### node feature dataframe #############################################################################
         node_feature[t] = build_feature_set(df, key_list, g_train[t], "train")
@@ -258,17 +259,17 @@ def dynamic_graph_feature_set(df, key_list, train_data, g_parent, g_train, g_tra
         #                                                           d_c[partition[row['node_index']]]
         #                                                           [row['node_index']], axis=1)
 
-        node_feature[t]['y_weight'] = node_feature[t].apply(lambda row:
-                                                            feature_y_weight(g_train_static,
-                                                                             row['node_index'],
-                                                                             t,
-                                                                             year_score,
-                                                                             max_year_weight), axis=1)
+        # node_feature[t]['y_weight'] = node_feature[t].apply(lambda row:
+        #                                                     feature_y_weight(g_train_static,
+        #                                                                      row['node_index'],
+        #                                                                      t,
+        #                                                                      year_score,
+        #                                                                      max_year_weight), axis=1)
         node_feature[t]['node_type_aut'] = node_feature[t].apply(lambda row:
                                                                  20 if row['node_index'] in p1_aut
                                                                  else 5 if row['node_index'] in p2_aut
-                                                                 else 3 if row['node_index'] in guest_aut
-                                                                 else 1 if row['node_index'] in ch_aut
+                                                                 else 1 if row['node_index'] in guest_aut
+                                                                 else 3 if row['node_index'] in ch_aut
                                                                  else 0, axis=1)
 
         node_feature[t]['node_type_art'] = node_feature[t].apply(lambda row:
@@ -324,8 +325,8 @@ def train_data_frame_dynamic(train_data, node_feature, g):
     # train_data['part'] = train_data.apply(lambda row:
     #                                       1 if part_id[row['row_name'][0]] == part_id[row['row_name'][1]] else
     #                                       0, axis=1)
-    train_data['y_weight'] = train_data.apply(lambda row:
-                                              year[row['row_name'][0]] * year[row['row_name'][1]], axis=1)
+    # train_data['y_weight'] = train_data.apply(lambda row:
+    #                                           year[row['row_name'][0]] * year[row['row_name'][1]], axis=1)
     # train_data['part_cnt'] = train_data.apply(lambda row:
     #                                           part_cnt[row['row_name'][0]] *
     #                                           part_cnt[row['row_name'][1]]
@@ -370,21 +371,24 @@ def train_data_frame_dynamic(train_data, node_feature, g):
                                                len(g[row['row_name'][1]]) *
                                                types_deg[row['row_name'][1]]), axis=1)
 
-    train_data['y_weight1'] = train_data.apply(lambda row:
-                                               (year[row['row_name'][0]] *
-                                                len(g[row['row_name'][0]])
-                                                + len(g[row['row_name'][1]]) *
-                                                year[row['row_name'][1]]), axis=1)
+    # train_data['y_weight1'] = train_data.apply(lambda row:
+    #                                            (year[row['row_name'][0]] *
+    #                                             len(g[row['row_name'][0]])
+    #                                             + len(g[row['row_name'][1]]) *
+    #                                             year[row['row_name'][1]]), axis=1)
 
     train_data['citation'] = train_data.apply(lambda row:
                                               types_aut[row['row_name'][0]] * citation[row['row_name'][0]]
                                               + types_aut[row['row_name'][1]] * citation[row['row_name'][1]], axis=1)
+    train_data['citation1'] = train_data.apply(lambda row:
+                                               g.nodes[row['row_name'][0]]['citation']
+                                               +g.nodes[row['row_name'][1]]['citation'], axis=1)
     ####### train data normalization -----------------------------------------------------------------------------------
-    train_data['y_weight1'] = ut.min_max_norm(train_data['y_weight1'])
-    train_data['typeart'] = ut.min_max_norm(train_data['typeart'])
-    train_data['typeaut'] = ut.min_max_norm(train_data['typeaut'])
-    train_data['typenode'] = ut.min_max_norm(train_data['typenode'])
-    train_data['citation'] = ut.min_max_norm(train_data['citation'])
+    # train_data['y_weight1'] = ut.min_max_norm(train_data['y_weight1'])
+    # train_data['typeart'] = ut.min_max_norm(train_data['typeart'])
+    # train_data['typeaut'] = ut.min_max_norm(train_data['typeaut'])
+    # train_data['typenode'] = ut.min_max_norm(train_data['typenode'])
+    # train_data['citation'] = ut.min_max_norm(train_data['citation'])
     ######### calculate topological metrics-----------------------------------------------------------------------------
     resource_allocation = list(nx.resource_allocation_index(g, list(train_data['row_name'])))
     jaccard_coef = list(nx.jaccard_coefficient(g, list(train_data['row_name'])))
@@ -396,18 +400,18 @@ def train_data_frame_dynamic(train_data, node_feature, g):
     train_data['pref'] = list(zip(*pref))[2]
 
     ####### train data normalization -----------------------------------------------------------------------------------
-    train_data['aut'] = ut.min_max_norm(train_data['aut'])
-    train_data['art'] = ut.min_max_norm(train_data['art'])
-    train_data['af1'] = ut.min_max_norm(train_data['af1'])
-    train_data['af2'] = ut.min_max_norm(train_data['af2'])
-    train_data['coun'] = ut.min_max_norm(train_data['coun'])
-    train_data['close'] = ut.min_max_norm(train_data['close'])
+    # train_data['aut'] = ut.min_max_norm(train_data['aut'])
+    # train_data['art'] = ut.min_max_norm(train_data['art'])
+    # train_data['af1'] = ut.min_max_norm(train_data['af1'])
+    # train_data['af2'] = ut.min_max_norm(train_data['af2'])
+    # train_data['coun'] = ut.min_max_norm(train_data['coun'])
+    # train_data['close'] = ut.min_max_norm(train_data['close'])
     # train_data['type'] = ut.min_max_norm(train_data['type'])
-    train_data['y_weight'] = ut.min_max_norm(train_data['y_weight'])
+    # train_data['y_weight'] = ut.min_max_norm(train_data['y_weight'])
     # train_data['part_cnt'] = ut.min_max_norm(train_data['part_cnt'])
-    train_data['path3'] = ut.min_max_norm(train_data['path3'])
-    train_data['cm'] = ut.min_max_norm(train_data['cm'])
-    train_data['pref'] = ut.min_max_norm(train_data['pref'])
+    # train_data['path3'] = ut.min_max_norm(train_data['path3'])
+    # train_data['cm'] = ut.min_max_norm(train_data['cm'])
+    # train_data['pref'] = ut.min_max_norm(train_data['pref'])
 
     return train_data
 
@@ -467,5 +471,21 @@ def drop_feature_columns(train_data, columns, time):
 #                                          for i, _ in enumerate(feature_names)])
 #     feature_list = list(all_combinations)
 #     for feature in feature_list:
+#     for feature in feature_list:
 #         columns_drop = list(set(feature_names).difference(set(feature)))
 #         train_data = drop_feature_columns(train_data, columns_drop, time)
+
+
+def citation_feature_build(X,g_train,edge_list,time):
+    ts=time[1]
+    for i, tt in enumerate(X):
+        for j, gg in enumerate(tt):
+            if X[i][j][0] == 0:
+                if g_train[ts + j].has_node(edge_list[i][0]):
+                    X[i][j][0] = g_train[ts + j].nodes[edge_list[i][0]]['citation'] * (j + 1)* 1
+                elif g_train[ts + j].has_node(edge_list[i][1]):
+                    X[i][j][0] = g_train[ts + j].nodes[edge_list[i][1]]['citation'] * (j + 1)* 1
+            else:
+                X[i][j][0] = X[i][j][0] * (j + 1)* 2
+    X = X / np.linalg.norm(X, ord=np.inf, axis=0, keepdims=True)
+    return X

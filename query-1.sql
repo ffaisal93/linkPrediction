@@ -211,10 +211,10 @@ affiliationtable.affiliation_1, affiliationtable.affiliation_2, affiliationtable
         INNER JOIN
 (SELECT  art_id, keyword =
     STUFF((SELECT DISTINCT '; ' + keyword
-           FROM obesitykeywords2_Arif09_13 b
+           FROM three_degree_keyword_list b
            WHERE b.art_id = a.art_id
           FOR XML PATH('')), 1, 2, '')
-FROM obesitykeywords2_Arif09_13 a
+FROM three_degree_keyword_list a
 GROUP BY art_id) AS keytable
 on article.id=keytable.art_id
 INNER JOIN
@@ -248,3 +248,12 @@ ON article.id=affiliationtable.art_id;
 
 
 
+[0.7175125019217716, 0.7538886106870882, 0.797863500860664, 0.8002849363198428, 0.7982936501691694, 0.7952978004128609, 0.7676728607279769, 0.7932854501319488]
+['close', 'cm', 'typeaut', 'typeart', 'typenode', 'y_weight1', 'res_aloc', 'pref']
+
+
+closeness = 0.72
+common neighbour = 0.75
+my feature = 0.80
+resource allocation = 0.77
+preferential attachment = 0.79
