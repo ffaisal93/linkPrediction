@@ -11,3 +11,4 @@ dataframes/
 gephy/
 models/
 *.xml
+dataset/
