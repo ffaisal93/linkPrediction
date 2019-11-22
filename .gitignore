@@ -4,9 +4,9 @@
 *.pdf
 *.gpickle
 *.pickle
+graphs/
 graphs/apnea/*.gpickle
 graphs/obesity/*.gpickle
-graphs/
 dataframes/
 gephy/
 models/
