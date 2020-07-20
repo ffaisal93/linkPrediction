@@ -1,8 +1,9 @@
 import pandas as pd
+from matplotlib import pylab
 from pylab import *
 import pickle
 import os.path
-
+import h5py
 
 def keyword_split(df, key):
     """
@@ -103,12 +104,11 @@ def save_data(data, data_path, domain, name, time):
 
     """
     try:
-        data
         filename = domain + "-" + name + "_" + str(time[1]) + "-" + str(time[2]) + ".pkl"
         filename_path = os.path.join(data_path, filename)
+        print(filename_path)
         with open(filename_path, "wb") as f:
             pickle.dump(data, f)
-            print(filename_path)
     except NameError:
         print(name + ' not exist')
 
@@ -135,4 +135,5 @@ def scale(X, x_min, x_max):
     denom = X.max(axis=(0,1)) - X.min(axis=(0,1))
     denom[denom==0] = 1
     return x_min + nom/denom
+
 

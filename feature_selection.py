@@ -21,7 +21,7 @@ def node_and_article_feature(df, g):
     affiliation_1_set = []
     affiliation_2_set = []
     country_set = []
-    for nd, row in g.node(data=True):
+    for nd, row in g.nodes(data=True):
         node_set.append(nd)
         y_weight.append(len(row['year']))
         closeness.append(nx.closeness_centrality(g, nd))
@@ -46,24 +46,24 @@ def node_and_article_feature(df, g):
     affiliation_2_index = list(affiliation_2_set)
     country_index = list(country_set)
     node_index = list(node_set)
-    td = np.zeros((len(g.nodes()), len(article_set)))
-    ta = np.zeros((len(g.nodes()), len(author_set)))
+    td = np.zeros((len(g.nodes()), len(article_set)),dtype='uint8')
+    ta = np.zeros((len(g.nodes()), len(author_set)),dtype='uint8')
     taf1 = np.zeros((len(g.nodes()), len(affiliation_1_set)))
     taf2 = np.zeros((len(g.nodes()), len(affiliation_2_set)))
     tc = np.zeros((len(g.nodes()), len(country_set)))
-    for nd, art in g.node(data='art_id'):
+    for nd, art in g.nodes(data='art_id'):
         for art_s in art:
             td[node_index.index(nd)][article_index.index(art_s)] = 1
-    for nd, aut in g.node(data='author'):
+    for nd, aut in g.nodes(data='author'):
         for aut_s in aut:
             ta[node_index.index(nd)][author_index.index(aut_s)] = 1
-    for nd, af1 in g.node(data='affiliation_1'):
+    for nd, af1 in g.nodes(data='affiliation_1'):
         for af1_s in af1:
             taf1[node_index.index(nd)][affiliation_1_index.index(af1_s)] = 1
-    for nd, af2 in g.node(data='affiliation_2'):
+    for nd, af2 in g.nodes(data='affiliation_2'):
         for af2_s in af2:
             taf2[node_index.index(nd)][affiliation_2_index.index(af2_s)] = 1
-    for nd, co in g.node(data='country'):
+    for nd, co in g.nodes(data='country'):
         for co_s in co:
             tc[node_index.index(nd)][country_index.index(co_s)] = 1
 
@@ -154,9 +154,11 @@ def feature_node_type(p1, g):
     :param g: graph
     :return: set of parents, children and guest keywords.
     """
+    score_inc ={}
     p2 = set()
     ch = set()
     for p in p1:
+        score_inc[p] = 0
         nb1 = set(nx.all_neighbors(g, p))
         p2.update(nb1)
         for nbs in nb1:
@@ -165,7 +167,24 @@ def feature_node_type(p1, g):
     p2 = p2.difference(p1)
     ch = ch.difference(p1, p2)
     guest = set(g.nodes()).difference(p1, p2, ch)
-    return p2, ch, guest
+
+    for p in p2:
+        nb1 = set(nx.all_neighbors(g, p))
+        com = nb1.intersection(p1)
+        score_inc[p]=len(com)
+
+    for p in ch:
+        nb1 = set(nx.all_neighbors(g, p))
+        com = nb1.intersection(p2)
+        score_inc[p] = len(com)
+
+    for p in guest:
+        nb1 = set(nx.all_neighbors(g, p))
+        com = nb1.intersection(ch)
+        score_inc[p] = len(com)
+
+
+    return p2, ch, guest, score_inc
 
 
 def feature_citation(g_parent, g_train, row, t, ts):
@@ -205,6 +224,7 @@ def dynamic_graph_feature_set(df, key_list, train_data, g_parent, g_train, g_tra
     :param time: time information
     :return: calculated dict of node features and train data
     """
+    nt_score = [25,5,3,1,0]
     ts_train = time[1]
     ts_test = time[2]
     it_index = time[4]
@@ -231,7 +251,7 @@ def dynamic_graph_feature_set(df, key_list, train_data, g_parent, g_train, g_tra
 
         ######------calculate set of grapndparents, parents, children, guest--------------------------------------------
         p1_aut = parent_keys_aut.intersection(set(g_train[t].nodes()))
-        p2_aut, ch_aut, guest_aut = feature_node_type(p1_aut, g_train[t])
+        p2_aut, ch_aut, guest_aut, inc_aut = feature_node_type(p1_aut, g_train[t])
         # print(len(p1),len(p2),len(ch),len(guest))
         # parent_keys = p1.union(p2)
         parent_keys_aut = node_feature[t].sort_values('term_aut', ascending=False)
@@ -239,14 +259,14 @@ def dynamic_graph_feature_set(df, key_list, train_data, g_parent, g_train, g_tra
         parent_keys_aut = set(parent_keys_aut['node_index'][0:list_range])
 
         p1_art = parent_keys_art.intersection(set(g_train[t].nodes()))
-        p2_art, ch_art, guest_art = feature_node_type(p1_art, g_train[t])
+        p2_art, ch_art, guest_art, inc_art = feature_node_type(p1_art, g_train[t])
         # parent_keys_art = p1_art.union(p2_art)
         parent_keys_art = node_feature[t].sort_values('term_art', ascending=False)
         parent_keys_art = parent_keys_art.reset_index()
         parent_keys_art = set(parent_keys_art['node_index'][0:list_range])
 
         p1_deg = parent_keys_deg.intersection(set(g_train[t].nodes()))
-        p2_deg, ch_deg, guest_deg = feature_node_type(p1_deg, g_train[t])
+        p2_deg, ch_deg, guest_deg, inc_deg = feature_node_type(p1_deg, g_train[t])
         # parent_keys_deg = p1_deg.union(p2_deg)
         parent_keys_deg = node_feature[t].sort_values('degree', ascending=False)
         parent_keys_deg = parent_keys_deg.reset_index()
@@ -267,25 +287,49 @@ def dynamic_graph_feature_set(df, key_list, train_data, g_parent, g_train, g_tra
         #                                                                      t,
         #                                                                      year_score,
         #                                                                      max_year_weight), axis=1)
+        # node_feature[t]['node_type_aut'] = node_feature[t].apply(lambda row:
+        #                                                          min((nt_score[0] if row['node_index'] in p1_aut
+        #                                                          else nt_score[1] if row['node_index'] in p2_aut
+        #                                                          else nt_score[2] if row['node_index'] in ch_aut
+        #                                                          else nt_score[3] if row['node_index'] in guest_aut
+        #                                                          else nt_score[4])+
+        #                                                              inc_aut[row['node_index']],25), axis=1)
+        #
+        # node_feature[t]['node_type_art'] = node_feature[t].apply(lambda row:
+        #                                                          min((nt_score[0] if row['node_index'] in p1_art
+        #                                                          else nt_score[1] if row['node_index'] in p2_art
+        #                                                          else nt_score[2] if row['node_index'] in ch_art
+        #                                                          else nt_score[3] if row['node_index'] in guest_art
+        #                                                          else nt_score[4])+
+        #                                                              inc_art[row['node_index']],25), axis=1)
+        # node_feature[t]['node_type_deg'] = node_feature[t].apply(lambda row:
+        #                                                          min((nt_score[0] if row['node_index'] in p1_deg
+        #                                                          else nt_score[1] if row['node_index'] in p2_deg
+        #                                                          else nt_score[2] if row['node_index'] in ch_deg
+        #                                                          else nt_score[3] if row['node_index'] in guest_deg
+        #                                                          else nt_score[4])+inc_deg[row['node_index']],25), axis=1)
+
         node_feature[t]['node_type_aut'] = node_feature[t].apply(lambda row:
-                                                                 20 if row['node_index'] in p1_aut
-                                                                 else 5 if row['node_index'] in p2_aut
-                                                                 else 1 if row['node_index'] in guest_aut
-                                                                 else 3 if row['node_index'] in ch_aut
-                                                                 else 0, axis=1)
+                                                                 nt_score[0] if row['node_index'] in p1_aut
+                                                                else nt_score[1] if row['node_index'] in p2_aut
+                                                                 else nt_score[2] if row['node_index'] in ch_aut
+                                                                 else nt_score[3] if row['node_index'] in guest_aut
+                                                                 else nt_score[4],axis=1)
 
         node_feature[t]['node_type_art'] = node_feature[t].apply(lambda row:
-                                                                 20 if row['node_index'] in p1_art
-                                                                 else 5 if row['node_index'] in p2_art
-                                                                 else 1 if row['node_index'] in guest_art
-                                                                 else 3 if row['node_index'] in ch_art
-                                                                 else 0, axis=1)
+                                                                 nt_score[0] if row['node_index'] in p1_aut
+                                                                 else nt_score[1] if row['node_index'] in p2_aut
+                                                                 else nt_score[2] if row['node_index'] in ch_aut
+                                                                 else nt_score[3] if row['node_index'] in guest_aut
+                                                                 else nt_score[4], axis=1)
         node_feature[t]['node_type_deg'] = node_feature[t].apply(lambda row:
-                                                                 20 if row['node_index'] in p1_deg
-                                                                 else 5 if row['node_index'] in p2_deg
-                                                                 else 1 if row['node_index'] in guest_deg
-                                                                 else 3 if row['node_index'] in ch_deg
-                                                                 else 0, axis=1)
+                                                                 nt_score[0] if row['node_index'] in p1_aut
+                                                                 else nt_score[1] if row['node_index'] in p2_aut
+                                                                 else nt_score[2] if row['node_index'] in ch_aut
+                                                                 else nt_score[3] if row['node_index'] in guest_aut
+                                                                 else nt_score[4],
+                                                                 axis=1)
+
         ######----------------------------------------------------------------------------------------------------------
         #############################  dataframe non-connected node pair features ######################################
         train_data[t] = train_data_frame_dynamic(train_data[t], node_feature[t], g_train[t])
@@ -396,11 +440,9 @@ def train_data_frame_dynamic(train_data, node_feature, g):
     # train_data['citation'] = ut.min_max_norm(train_data['citation'])
     ######### calculate topological metrics-----------------------------------------------------------------------------
     resource_allocation = list(nx.resource_allocation_index(g, list(train_data['row_name'])))
-    jaccard_coef = list(nx.jaccard_coefficient(g, list(train_data['row_name'])))
     adamic = list(nx.adamic_adar_index(g, list(train_data['row_name'])))
     pref = list(nx.preferential_attachment(g, list(train_data['row_name'])))
     train_data['res_aloc'] = list(zip(*resource_allocation))[2]
-    train_data['jac_coef'] = list(zip(*jaccard_coef))[2]
     train_data['adamic'] = list(zip(*adamic))[2]
     train_data['pref'] = list(zip(*pref))[2]
 

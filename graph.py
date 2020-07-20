@@ -1,7 +1,7 @@
 import itertools
 import networkx as nx
 import os.path
-
+import pickle
 
 def node_key_find(kl, label):
     """
@@ -257,3 +257,59 @@ def graph_load(graphpath, time):
           "edges:", len(g_test_static.edges()))
 
     return g_train, g_test, g_parent, g_train_static, g_test_static
+
+
+
+def reverseTuple(lstOfTuple):
+    return [tup[::-1] for tup in lstOfTuple]
+
+def graph_norm(root, domain, select_domain, g_train, g_test, assoc):
+    m_graph_path = root+'Informetrics/'+domain[select_domain]
+    print(m_graph_path)
+    tr_node = set()
+    for t in range(2008,2016):
+        m_file = m_graph_path+'/'+'asso_keynet_'+str(t)+'.pkl'
+        print(m_file)
+        infile = open(m_file,'rb')
+        m_g = pickle.load(infile)
+        infile.close()
+        assoc = m_g['association'].median()
+        m_g['edge']=m_g.apply(lambda row:(int(row['source']),int(row['target'])) if row['association']>=assoc
+                                  else (-1,-1),axis=1)
+        n_edges = list(m_g['edge'])
+        H= nx.Graph()
+        H.add_edges_from(n_edges)
+        if t==2015:
+            g_c = g_test[t].copy()
+            g_c.remove_nodes_from(n for n in g_test[t] if n not in H)
+            e1 = set(g_test[t].edges())
+            e2 = set(H.edges())
+            x=e1.difference(e2)
+            x=set(reverseTuple(x))
+            y=x.difference(e2)
+            g_c.remove_edges_from(list(y))
+            print(len(g_test[t].nodes()),len(g_c.nodes()),len(g_c.edges()))
+            g_test[t]=g_c
+            continue
+        else:
+            g_c = g_train[t].copy()
+            g_c.remove_nodes_from(n for n in g_train[t] if n not in H)
+            e1 = set(g_train[t].edges())
+            e2 = set(H.edges())
+            x=e1.difference(e2)
+            x=set(reverseTuple(x))
+            y=x.difference(e2)
+            g_c.remove_edges_from(list(y))
+            print(len(g_train[t].nodes()),len(g_c.nodes()),len(g_c.edges()))
+            g_train[t]=g_c
+            tr_node.update(g_train[t].nodes())
+    common_n = set(g_test[t].nodes()).intersection(tr_node)
+
+    for t in range(2008, 2016):
+        if t==2015:
+            g_test[t].remove_nodes_from(set(g_test[t].nodes()).difference(common_n))
+            print(len(g_test[t].nodes()),len(g_test[t].edges()))
+        else:
+            g_train[t].remove_nodes_from(set(g_train[t].nodes()).difference(common_n))
+            print(len(g_train[t].nodes()), len(g_train[t].edges()))
+    return g_train, g_test
